@@ -1,0 +1,483 @@
+MargeSurePro
+
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>MARGE-SÛRE PRO : L'EXCELLENCE</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        :root { 
+            --p: #0A84FF; --bg: #000; --card: #1C1C1E; 
+            --green: #32D74B; --red: #FF453A; --blue: #0A84FF; 
+            --orange: #FF9500; --gray: #8E8E93; 
+        }
+        .theme-plombier { --p: #0A84FF; }
+        .theme-elec { --p: #FFCC00; }
+        .theme-peintre { --p: #32D74B; }
+
+        * { -webkit-user-select: none; box-sizing: border-box; font-family: -apple-system, system-ui, sans-serif; touch-action: manipulation; }
+        input, select, textarea { -webkit-user-select: text !important; outline: none; }
+        body { background-color: var(--bg); color: white; margin: 0; padding: env(safe-area-inset-top) 15px 140px 15px; transition: background 0.3s; }
+
+        /* Design des cartes */
+        .card { background: var(--card); padding: 20px; border-radius: 22px; margin-bottom: 12px; border: 1px solid #2C2C2E; position: relative; }
+        .net-display { font-size: 42px; font-weight: 900; color: var(--green); letter-spacing: -1px; margin: 5px 0; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        
+        .info-bubble { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; background: #3A3A3C; color: var(--p); border-radius: 50%; font-size: 12px; font-weight: bold; margin-left: 8px; cursor: pointer; border: 1px solid #444; }
+
+        .grid-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+
+        .tab { padding: 12px 18px; border-radius: 14px; background: #2C2C2E; color: var(--gray); font-size: 11px; font-weight: 800; border: none; min-width: 100px; flex-shrink: 0; cursor: pointer; transition: 0.2s; }
+        .tab.active { background: var(--p); color: #000; }
+        
+        input, select { width: 100%; background: #2C2C2E; padding: 15px; border-radius: 12px; color: white; border: 1px solid #3A3A3C; font-size: 16px; height: 55px; transition: border 0.2s; }
+        input:focus { border-color: var(--p); }
+        label { display: flex; align-items: center; color: var(--gray); font-size: 10px; font-weight: 800; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .sub-label { font-size: 9px; color: var(--p); font-weight: 600; margin-bottom: 8px; display: block; }
+
+        .btn-main { background: var(--p); color: #000; border: none; padding: 20px; border-radius: 18px; font-size: 14px; font-weight: 900; text-transform: uppercase; width: 100%; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-add { background: var(--p); color: #000; border-radius: 12px; padding: 0 15px; border: none; font-weight: 900; font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+        /* Liste des dossiers */
+        .folder-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #1C1C1E; border-radius: 20px; margin-bottom: 12px; border: 1px solid #333; border-left: 6px solid var(--p); cursor: pointer; position: relative; }
+        .btn-delete-folder { background: rgba(255, 69, 58, 0.1); color: var(--red); border: none; padding: 12px; border-radius: 12px; font-size: 18px; cursor: pointer; margin-left: 10px; }
+        .status-pill { font-size: 9px; font-weight: 900; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; margin-top: 5px; display: inline-block; }
+        .pill-paid { background: #32D74B; color: #000; }
+        .pill-wait { background: #FF9500; color: #000; }
+
+        .action-bar { position: fixed; bottom: 30px; left: 15px; right: 15px; display: flex; gap: 10px; z-index: 1000; background: rgba(0,0,0,0.85); padding: 12px; border-radius: 28px; backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); }
+
+        .print-only { display: none; }
+
+        /* Photos */
+        .photo-box { background: #2C2C2E; border-radius: 18px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; overflow: hidden; position: relative; border: 1px dashed #444; cursor: pointer; }
+        .photo-box img { width: 100%; height: 100%; object-fit: cover; position: absolute; }
+        .btn-del-photo { position: absolute; top: 8px; right: 8px; background: var(--red); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-weight: bold; z-index: 5; }
+
+        @media print {
+            body { background: white; color: black; padding: 20px; }
+            .card { border: 1px solid #eee; background: white; break-inside: avoid; }
+            .btn-main, .action-bar, .btn-add, .tab, #lock-screen, .info-bubble, button, .no-print { display: none !important; }
+            .print-only { display: block !important; text-align: center; border-bottom: 2px solid #000; margin-bottom: 30px; padding-bottom: 10px; }
+        }
+    </style>
+</head>
+<body class="theme-plombier">
+
+    <div id="lock-screen" style="text-align: center; padding: 100px 20px;">
+        <div style="font-size:40px; font-weight:900; color:white; margin-bottom:10px; letter-spacing: -2px;">MARGE<span style="color:var(--p)">SÛRE</span> PRO</div>
+        <div id="id-display" style="background:#1C1C1E; padding:12px; border-radius:14px; color:var(--p); font-weight:bold; margin-bottom:30px; border:1px solid #333; display:inline-block; min-width: 150px;">ID ARTISAN : ...</div><br>
+        <input type="number" id="keyIn" placeholder="CLÉ D'ACCÈS" style="max-width:300px; text-align:center; margin-bottom: 20px;"><br>
+        <button class="btn-main" onclick="unlock()" style="max-width:300px; margin:0 auto;">DÉVERROUILLER LE SYSTÈME</button>
+    </div>
+
+    <div id="app" style="display:none;">
+        <div id="view-folders">
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom:25px;">
+                <h2 style="margin:0; font-size: 24px;">📂 MES PROJETS</h2>
+                <button onclick="toggleSetup()" style="background:var(--card); border:1px solid #333; padding:12px 18px; border-radius:16px; color:var(--p); font-size:11px; font-weight:800; cursor:pointer;">⚙️ RÉGLAGES FISCAUX</button>
+            </div>
+            <div id="folder-list"></div>
+            <button class="btn-main" style="background: var(--blue); color: white; margin-top: 20px;" onclick="createNewDossier()">+ CRÉER UN NOUVEAU CHANTIER</button>
+        </div>
+
+        <div id="view-edit" style="display:none;">
+            <div id="print-header" class="print-only">RAPPORT DE CHANTIER PROFESSIONNEL</div>
+
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom:15px;">
+                <button onclick="saveAndQuit()" style="background:none; border:none; color:var(--p); font-weight:900; font-size:16px; cursor:pointer;">⬅ QUITTER</button>
+                <div style="display:flex; gap:10px;">
+                    <button onclick="sendWhatsApp()" style="background:#25D366; color:black; border:none; padding:10px 15px; border-radius:12px; font-weight:900; font-size:11px; cursor:pointer;">🟢 WHATSAPP</button>
+                    <button onclick="preparePrint(); window.print()" style="background:white; color:black; border:none; padding:10px 15px; border-radius:12px; font-weight:900; font-size:11px; cursor:pointer;">📄 PDF</button>
+                </div>
+            </div>
+
+            <div class="card" style="text-align:center; background: radial-gradient(circle at top right, #2c2c2e, #1c1c1e);">
+                <div id="res-net" class="net-display">0 €</div>
+                <div style="font-size:11px; font-weight:900; color:var(--gray); display:flex; justify-content:center; align-items:center;">
+                    BÉNÉFICE NET APRÈS TOUTES CHARGES
+                    <span class="info-bubble" onclick="help('Ce montant est ce qu\'il vous reste réellement en poche. On a déjà déduit l\'Urssaf, la TVA, vos matériaux, vos frais de route et votre salaire journalier.')">?</span>
+                </div>
+                <div id="fiscal-warning" style="font-size:10px; color:var(--orange); margin-top:10px; font-weight:700;"></div>
+            </div>
+
+            <div style="display:flex; gap:8px; margin-bottom:15px; overflow-x: auto; padding-bottom:5px;" class="no-print">
+                <button id="tab-plombier" class="tab active" onclick="changeJob('plombier')">💧 PLOMBERIE</button>
+                <button id="tab-elec" class="tab" onclick="changeJob('elec')">⚡ ÉLEC</button>
+                <button id="tab-peintre" class="tab" onclick="changeJob('peintre')">🎨 PEINTURE</button>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content: space-between;">
+                    <label>👤 DOSSIER CLIENT</label>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <label style="margin:0">PAYÉ ?</label>
+                        <input type="checkbox" id="isPaid" onchange="calc()" style="width:25px; height:25px;">
+                    </div>
+                </div>
+                <input type="text" id="client" placeholder="Ex: Mme Martin - Salle de bain" oninput="calc()" style="margin-top:10px;">
+                <div class="grid-compare">
+                    <div>
+                        <label>DEVIS VENDU TTC <span class="info-bubble" onclick="help('Le montant total que le client va vous payer.')">?</span></label>
+                        <input type="number" id="ttc" oninput="calc()" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label>TVA APPLIQUÉE</label>
+                        <select id="tva" onchange="calc()">
+                            <option value="1.10">10% (Rénovation)</option>
+                            <option value="1.20">20% (Neuf)</option>
+                            <option value="1.055">5.5% (Énergie)</option>
+                            <option value="1.00">0% (Auto-Entr.)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div id="job-module" class="card"></div>
+
+            <div class="card" style="border: 1px solid #333;">
+                <label>📦 MATÉRIAUX & LOGISTIQUE</label>
+                <span class="sub-label">Renseignez vos coûts réels pour une marge exacte</span>
+                <div class="grid-compare">
+                    <div>
+                        <label>MATOS (RÉEL TTC)</label>
+                        <div style="display:flex; gap:5px;">
+                            <input type="number" id="matos_real" oninput="calc()" placeholder="0.00">
+                            <button class="btn-add" onclick="addTicket()">+</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label>FRAIS DE ROUTE <span class="info-bubble" onclick="help('Essence, péage, parking, zone de livraison.')">?</span></label>
+                        <input type="number" id="divers" oninput="calc()" placeholder="0.00">
+                    </div>
+                </div>
+                <div style="margin-top:15px;">
+                    <label>DURÉE DU CHANTIER (JOURS)</label>
+                    <input type="number" id="jours" oninput="calc()" placeholder="Nb de jours">
+                </div>
+            </div>
+
+            <div class="card">
+                <label>📸 RÉALISATION</label>
+                <div class="photo-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+                    <div class="photo-box" onclick="triggerPhoto('before')">
+                        <div id="lbl-before">📷 AVANT</div>
+                        <img id="img-before" style="display:none;">
+                    </div>
+                    <div class="photo-box" onclick="triggerPhoto('after')">
+                        <div id="lbl-after">📷 APRÈS</div>
+                        <img id="img-after" style="display:none;">
+                    </div>
+                </div>
+                <input type="file" id="photo-input" hidden accept="image/*">
+            </div>
+
+            <div class="card" style="background: rgba(10, 132, 255, 0.05); border-color: var(--p);">
+                <label style="color:var(--p)">🧾 DÉTAIL DES PRÉLÈVEMENTS</label>
+                <div style="margin-top:10px; font-size:13px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span>Part URSSAF / Cotisations :</span>
+                        <span id="tax-urssaf" style="color:var(--red); font-weight:bold;">0 €</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span>Votre Salaire réservé :</span>
+                        <span id="tax-salary" style="color:var(--blue); font-weight:bold;">0 €</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding-top:8px; border-top:1px solid #333;">
+                        <span style="font-weight:bold;">TVA à reverser :</span>
+                        <span id="tax-tva" style="color:var(--orange); font-weight:bold;">0 €</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-bar no-print">
+                <button class="btn-main" onclick="saveAndQuit()">💾 ENREGISTRER LE DOSSIER</button>
+            </div>
+        </div>
+
+        <div id="setup-view" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.98); z-index:5000; padding:30px; overflow-y:auto;">
+            <h2 style="color:var(--p); margin-top:0;">⚙️ PROFIL JURIDIQUE</h2>
+            <p style="font-size:12px; color:var(--gray); margin-bottom:25px;">Ces réglages impactent directement le calcul de votre bénéfice net.</p>
+            
+            <label>STRUCTURE JURIDIQUE</label>
+            <select id="set-regime" onchange="saveGlobal()" style="margin-bottom:20px;">
+                <option value="ae">Auto-Entrepreneur (Urssaf 21.2%)</option>
+                <option value="sasu">SASU / EURL (Charges ~45%)</option>
+                <option value="patron">SARL avec Salariés (Complexe)</option>
+            </select>
+
+            <label>NOM DE L'ENTREPRISE</label>
+            <input type="text" id="set-company" oninput="saveGlobal()" placeholder="Ex: Jean Plomberie" style="margin-bottom:20px;">
+            
+            <div class="grid-compare" style="margin-bottom:20px;">
+                <div>
+                    <label>SALAIRE JOUR CIBLÉ</label>
+                    <input type="number" id="set-salaire" oninput="saveGlobal()" value="150">
+                </div>
+                <div>
+                    <label>URSSAF % PERSONNALISÉ</label>
+                    <input type="number" id="set-urssaf" oninput="saveGlobal()" value="21.2">
+                </div>
+            </div>
+
+            <button class="btn-main" onclick="toggleSetup()">VALIDER ET FERMER</button>
+        </div>
+    </div>
+
+    <script>
+        let currentId = null;
+        let activeJob = 'plombier';
+        let photos = { before: null, after: null };
+
+        // --- CORE ---
+        window.onload = () => {
+            const deviceID = localStorage.getItem('ms_id') || Math.floor(Math.random()*8999)+1000;
+            localStorage.setItem('ms_id', deviceID);
+            document.getElementById('id-display').innerText = "ID ARTISAN : " + deviceID;
+            loadGlobal();
+            if(localStorage.getItem('ms_ok') === 'true') run();
+        };
+
+        function help(txt) { alert(txt); }
+
+        function unlock() {
+            const k = document.getElementById('keyIn').value;
+            if(k === "061266" || k === "2026") { localStorage.setItem('ms_ok', 'true'); run(); }
+            else alert("Clé incorrecte.");
+        }
+
+        function run() {
+            document.getElementById('lock-screen').style.display='none';
+            document.getElementById('app').style.display='block';
+            renderFolders();
+        }
+
+        // --- CALCULS FISCAUX ---
+        function calc() {
+            if(!currentId) return;
+
+            // 1. Entrées
+            const ttc = parseFloat(document.getElementById('ttc').value) || 0;
+            const tvaDivider = parseFloat(document.getElementById('tva').value) || 1;
+            const matos = parseFloat(document.getElementById('matos_real').value) || 0;
+            const frais = parseFloat(document.getElementById('divers').value) || 0;
+            const jours = parseFloat(document.getElementById('jours').value) || 0;
+            const salJour = parseFloat(document.getElementById('set-salaire').value) || 0;
+            const regime = document.getElementById('set-regime').value;
+            const urssafRate = (parseFloat(document.getElementById('set-urssaf').value) || 21.2) / 100;
+
+            // 2. Logique Fiscale
+            const ht = ttc / tvaDivider;
+            const tvaCollectee = ttc - ht;
+
+            let cotisations = 0;
+            if(regime === 'ae') {
+                cotisations = ttc * urssafRate; // AE calculé sur le CA TTC
+            } else {
+                cotisations = (ht - matos - frais) * 0.45; // Estimation charges sociales société
+            }
+
+            const salaireTotal = jours * salJour;
+            const netFinal = ht - cotisations - matos - frais - salaireTotal;
+
+            // 3. Affichage
+            const res = document.getElementById('res-net');
+            res.innerText = Math.round(netFinal) + " €";
+            res.style.color = netFinal < 0 ? "var(--red)" : "var(--green)";
+
+            document.getElementById('tax-urssaf').innerText = Math.round(cotisations) + " €";
+            document.getElementById('tax-salary').innerText = Math.round(salaireTotal) + " €";
+            document.getElementById('tax-tva').innerText = Math.round(tvaCollectee) + " €";
+
+            if(netFinal < 0) document.getElementById('fiscal-warning').innerText = "⚠️ ATTENTION : Chantier à perte !";
+            else document.getElementById('fiscal-warning').innerText = "✅ Chantier rentable";
+
+            saveCurrent();
+        }
+
+        // --- GESTION DOSSIERS ---
+        function renderFolders() {
+            const list = document.getElementById('folder-list');
+            const f = JSON.parse(localStorage.getItem('ms_folders')) || [];
+            if(f.length === 0) {
+                list.innerHTML = `<div style="text-align:center; padding:40px; color:var(--gray); border:1px dashed #333; border-radius:20px;">Aucun chantier enregistré. Commencez maintenant !</div>`;
+                return;
+            }
+            list.innerHTML = f.map(i => `
+                <div class="folder-item" onclick="openDossier('${i.id}')">
+                    <div style="flex:1">
+                        <b style="font-size:16px;">${i.name || 'Sans nom'}</b><br>
+                        <small style="color:var(--gray)">${i.date} • ${i.job.toUpperCase()}</small><br>
+                        <span class="status-pill ${i.paid ? 'pill-paid' : 'pill-wait'}">${i.paid ? 'PAYÉ' : 'EN ATTENTE'}</span>
+                    </div>
+                    <div style="text-align:right">
+                        <div style="font-weight:900; font-size:18px; color:${i.net.includes('-')?'var(--red)':'var(--green)'}">${i.net}</div>
+                        <button class="btn-delete-folder" onclick="deleteDossier(event, '${i.id}')">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function deleteDossier(e, id) {
+            e.stopPropagation();
+            if(confirm("Voulez-vous vraiment supprimer définitivement ce chantier ?")) {
+                localStorage.removeItem(id);
+                let f = JSON.parse(localStorage.getItem('ms_folders')) || [];
+                f = f.filter(x => x.id !== id);
+                localStorage.setItem('ms_folders', JSON.stringify(f));
+                renderFolders();
+            }
+        }
+
+        function createNewDossier() {
+            currentId = 'd_' + Date.now();
+            photos = { before: null, after: null };
+            document.getElementById('client').value = "";
+            document.getElementById('ttc').value = "";
+            document.getElementById('matos_real').value = "";
+            document.getElementById('divers').value = "";
+            document.getElementById('jours').value = "";
+            document.getElementById('isPaid').checked = false;
+            resetPhotos();
+            document.getElementById('view-folders').style.display='none';
+            document.getElementById('view-edit').style.display='block';
+            changeJob('plombier');
+        }
+
+        function openDossier(id) {
+            currentId = id;
+            const d = JSON.parse(localStorage.getItem(id));
+            document.getElementById('client').value = d.name || "";
+            document.getElementById('ttc').value = d.ttc || "";
+            document.getElementById('tva').value = d.tva || "1.10";
+            document.getElementById('matos_real').value = d.m_real || "";
+            document.getElementById('divers').value = d.div || "";
+            document.getElementById('jours').value = d.jours || "";
+            document.getElementById('isPaid').checked = d.paid || false;
+            photos = d.photos || {before:null, after:null};
+            updatePhotoUI();
+            changeJob(d.job || 'plombier');
+            document.getElementById('view-folders').style.display='none';
+            document.getElementById('view-edit').style.display='block';
+        }
+
+        function saveCurrent() {
+            if(!currentId) return;
+            const data = {
+                id: currentId,
+                name: document.getElementById('client').value,
+                ttc: document.getElementById('ttc').value,
+                tva: document.getElementById('tva').value,
+                m_real: document.getElementById('matos_real').value,
+                div: document.getElementById('divers').value,
+                jours: document.getElementById('jours').value,
+                paid: document.getElementById('isPaid').checked,
+                job: activeJob,
+                photos: photos,
+                net: document.getElementById('res-net').innerText,
+                date: new Date().toLocaleDateString('fr-FR')
+            };
+            localStorage.setItem(currentId, JSON.stringify(data));
+            let f = JSON.parse(localStorage.getItem('ms_folders')) || [];
+            f = f.filter(x => x.id !== currentId);
+            f.unshift({id: data.id, name: data.name, net: data.net, paid: data.paid, date: data.date, job: data.job});
+            localStorage.setItem('ms_folders', JSON.stringify(f.slice(0, 15)));
+        }
+
+        function saveAndQuit() { saveCurrent(); document.getElementById('view-folders').style.display='block'; document.getElementById('view-edit').style.display='none'; renderFolders(); }
+
+        // --- WHATSAPP ---
+        function sendWhatsApp() {
+            const client = document.getElementById('client').value || "Client";
+            const net = document.getElementById('res-net').innerText;
+            const ttc = document.getElementById('ttc').value;
+            const ent = document.getElementById('set-company').value || "Mon Entreprise";
+            const msg = `🛠️ *RAPPORT DE CHANTIER - ${ent.toUpperCase()}*\n\n👤 *Dossier :* ${client}\n💰 *Montant Facturé :* ${ttc}€\n📈 *Marge Net Estimée :* ${net}\n✅ *Statut :* ${document.getElementById('isPaid').checked ? 'Payé' : 'En attente de règlement'}\n\n_Généré via MargeSûre Pro le ${new Date().toLocaleDateString()}_`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
+        }
+
+        // --- PHOTOS ---
+        function triggerPhoto(type) {
+            const input = document.getElementById('photo-input');
+            input.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    photos[type] = ev.target.result;
+                    updatePhotoUI();
+                    saveCurrent();
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        }
+
+        function updatePhotoUI() {
+            ['before','after'].forEach(t => {
+                const img = document.getElementById('img-'+t);
+                const lbl = document.getElementById('lbl-'+t);
+                if(photos[t]) {
+                    img.src = photos[t]; img.style.display='block'; lbl.style.display='none';
+                } else {
+                    img.style.display='none'; lbl.style.display='block';
+                }
+            });
+        }
+
+        function resetPhotos() { photos = {before:null, after:null}; updatePhotoUI(); }
+
+        // --- CONFIG ---
+        function changeJob(j) {
+            activeJob = j;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + j).classList.add('active');
+            const mod = document.getElementById('job-module');
+            if(j === 'plombier') mod.innerHTML = `<label>💧 DONNÉES MÉTIER</label><div class="grid-compare"><div><label>Nombre de Points d'eau</label><input type="number" oninput="calc()"></div><div><label>Linéaire cuivre (m)</label><input type="number" oninput="calc()"></div></div>`;
+            else if(j === 'elec') mod.innerHTML = `<label>⚡ DONNÉES MÉTIER</label><div class="grid-compare"><div><label>Prises / Interrupteurs</label><input type="number" oninput="calc()"></div><div><label>Tableau à refaire ?</label><input type="checkbox" onchange="calc()" style="width:25px;height:25px;"></div></div>`;
+            else mod.innerHTML = `<label>🎨 DONNÉES MÉTIER</label><div class="grid-compare"><div><label>Surface murale (m²)</label><input type="number" oninput="calc()"></div><div><label>Nombre de couches</label><input type="number" oninput="calc()"></div></div>`;
+            calc();
+        }
+
+        function toggleSetup() { const s = document.getElementById('setup-view'); s.style.display = s.style.display==='none'?'block':'none'; }
+        
+        function loadGlobal() {
+            const g = JSON.parse(localStorage.getItem('ms_global'));
+            if(g) {
+                document.getElementById('set-company').value = g.c || "";
+                document.getElementById('set-regime').value = g.r || "ae";
+                document.getElementById('set-urssaf').value = g.u || 21.2;
+                document.getElementById('set-salaire').value = g.s || 150;
+            }
+        }
+
+        function saveGlobal() {
+            localStorage.setItem('ms_global', JSON.stringify({
+                c: document.getElementById('set-company').value,
+                r: document.getElementById('set-regime').value,
+                u: document.getElementById('set-urssaf').value,
+                s: document.getElementById('set-salaire').value
+            }));
+            if(currentId) calc();
+        }
+
+        function addTicket() {
+            const v = prompt("Montant TTC du ticket (ex: Leroy Merlin, Point P...) :");
+            if(v) {
+                const current = parseFloat(document.getElementById('matos_real').value) || 0;
+                document.getElementById('matos_real').value = (current + parseFloat(v.replace(',','.'))).toFixed(2);
+                calc();
+            }
+        }
+
+        function preparePrint() {
+            document.getElementById('print-header').innerText = (document.getElementById('set-company').value || "ARTISAN") + " - RAPPORT DE RENTABILITÉ";
+        }
+    </script>
+</body>
+</html>
+(
