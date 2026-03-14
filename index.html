@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>MARGE-SÛRE PRO : GESTION A-Z</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+    
+    <style>
+        :root { --p: #D4AF37; --bg: #000; --card: #1C1C1E; --green: #32D74B; --red: #FF453A; --blue: #0A84FF; --orange: #FF9500; }
+        .theme-plombier { --p: #0A84FF; }
+        .theme-elec { --p: #FFCC00; }
+        .theme-peintre { --p: #32D74B; }
+
+        * { -webkit-user-select: none; box-sizing: border-box; font-family: -apple-system, system-ui, sans-serif; touch-action: manipulation; }
+        input, select { -webkit-user-select: text !important; outline: none; }
+        body { background-color: var(--bg); color: white; margin: 0; padding: env(safe-area-inset-top) 15px 140px 15px; }
+
+        .card { background: var(--card); padding: 20px; border-radius: 25px; margin-bottom: 12px; border: 1px solid #2C2C2E; position: relative; }
+        .net-display { font-size: 42px; font-weight: 900; color: var(--green); letter-spacing: -1px; margin: 5px 0; }
+        
+        .tab { padding: 12px 18px; border-radius: 14px; background: #2C2C2E; color: #8E8E93; font-size: 11px; font-weight: 800; border: none; min-width: 100px; }
+        .tab.active { background: var(--p); color: #000; }
+        
+        input, select { width: 100%; background: #2C2C2E; padding: 15px; border-radius: 12px; color: white; border: 1px solid #3A3A3C; font-size: 16px; margin-bottom: 10px; }
+        label { display: flex; align-items: center; color: #8E8E93; font-size: 10px; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; }
+
+        .btn-main { background: var(--p); color: #000; border: none; padding: 18px; border-radius: 18px; font-size: 13px; font-weight: 900; text-transform: uppercase; width: 100%; }
+        .info-btn { width: 22px; height: 22px; background: #333; color: white; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; border:none; margin-left: auto; }
+
+        .folder-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #1C1C1E; border-radius: 20px; margin-bottom: 10px; border: 1px solid #333; border-left: 5px solid var(--p); }
+        .cat-item { display: flex; justify-content: space-between; padding: 12px; background: #2C2C2E; border-radius: 12px; margin-bottom: 5px; font-size: 14px; }
+
+        #sig-canvas { background: #fff; width: 100%; height: 160px; border-radius: 15px; }
+        #lock-screen { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; }
+        .action-bar { position: fixed; bottom: 30px; left: 15px; right: 15px; display: flex; gap: 8px; z-index: 1000; }
+        
+        .header-audit { background: linear-gradient(180deg, #1C1C1E 0%, #000 100%); padding: 25px; border-radius: 35px; border: 1px solid #333; margin: 15px 0; display: flex; align-items: center; justify-content: space-around; }
+        #main-chart { width: 60px; height: 60px; border-radius: 50%; border: 4px solid #333; }
+        #user-logo-preview { max-height: 40px; margin-bottom: 10px; display: none; }
+    </style>
+</head>
+<body class="theme-plombier">
+
+    <div id="lock-screen">
+        <div style="font-size:35px; font-weight:900; color:white; margin-bottom:10px;">MARGE<span style="color:var(--p)">SÛRE</span></div>
+        <div id="id-display" style="background:#1C1C1E; padding:10px; border-radius:12px; color:var(--p); font-weight:bold; margin-bottom:20px; border:1px solid #333;">ID : ...</div>
+        <input type="number" id="keyIn" placeholder="CLÉ D'ACCÈS ARTISAN">
+        <button class="btn-main" onclick="unlock()">DÉVERROUILLER L'ACCÈS</button>
+        <button onclick="requestKey()" style="background:none; border:none; color:var(--p); margin-top:15px; text-decoration:underline;">DEMANDER MA CLÉ (WHATSAPP)</button>
+    </div>
+
+    <div id="app" style="display:none;">
+        
+        <div id="view-folders">
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom:20px;">
+                <h2 style="margin:0;">📂 MES CHANTIERS</h2>
+                <button onclick="toggleSetup()" style="background:var(--card); border:1px solid #333; padding:10px; border-radius:15px; color:var(--p); font-size:10px; font-weight:800;">⚙️ RÉGLAGES</button>
+            </div>
+            <div id="folder-list"></div>
+            <button class="btn-main" style="background: var(--blue); color: white; margin-top: 20px;" onclick="createNewDossier()">+ CRÉER UN NOUVEAU CHANTIER</button>
+        </div>
+
+        <div id="view-edit" style="display:none;">
+            <div style="display:flex; justify-content: space-between; align-items: center;">
+                <button onclick="saveAndQuit()" style="background:none; border:none; color:var(--p); font-weight:bold;">⬅ RETOUR DOSSIERS</button>
+                <img id="pdf-logo-view" src="" style="max-height:30px; display:none;">
+            </div>
+
+            <div class="header-audit" id="pdf-header">
+                <div style="text-align:left;">
+                    <div id="res-net" class="net-display">0 €</div>
+                    <div style="font-size:10px; font-weight:900; opacity:0.7;">BÉNÉFICE NET ESTIMÉ <button class="info-btn" onclick="alert('C\'est ton gain REEL après avoir payé le matos, l\'URSSAF, tes frais fixes et ton salaire journalier.')">?</button></div>
+                </div>
+                <div id="main-chart"></div>
+            </div>
+
+            <div style="display:flex; gap:5px; margin-bottom:15px; overflow-x: auto;">
+                <button id="tab-plombier" class="tab active" onclick="changeJob('plombier')">💧 PLOMBERIE</button>
+                <button id="tab-elec" class="tab" onclick="changeJob('elec')">⚡ ÉLEC</button>
+                <button id="tab-peintre" class="tab" onclick="changeJob('peintre')">🎨 PEINTURE</button>
+            </div>
+
+            <div class="card">
+                <label>👤 DOSSIER CLIENT</label>
+                <input type="text" id="client" placeholder="Nom du client / Chantier" oninput="saveCurrent()">
+                <div style="display:flex; gap:10px;">
+                    <input type="number" id="ttc" placeholder="Prix Vendu TTC (€)" oninput="calc()" style="flex:2">
+                    <select id="tva" onchange="calc()" style="flex:1">
+                        <option value="1.10">10%</option>
+                        <option value="1.20">20%</option>
+                        <option value="1.055">5.5%</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card" style="border: 1px dashed var(--p);">
+                <label>📦 CATALOGUE ARTICLES <button class="info-btn" onclick="alert('Ajoute ici tes matériaux fréquents pour les cumuler d\'un clic.')">?</button></label>
+                <div style="display:flex; gap:5px; margin-bottom:10px;">
+                    <input type="text" id="cat-name" placeholder="Nom" style="flex:2; margin-bottom:0;">
+                    <input type="number" id="cat-price" placeholder="Prix" style="flex:1; margin-bottom:0;">
+                    <button onclick="addToCatalog()" style="background:var(--p); border:none; border-radius:12px; padding:0 15px; font-weight:bold;">+</button>
+                </div>
+                <div id="catalog-list" style="max-height: 100px; overflow-y: auto;"></div>
+            </div>
+
+            <div class="card">
+                <label>🏗️ FRAIS MATÉRIAUX CUMULÉS (RÉEL)</label>
+                <div style="display:flex; gap:10px;">
+                    <input type="number" id="matos" placeholder="Dépenses (€)" oninput="calc()" style="flex:2">
+                    <button onclick="addTicket()" style="flex:1; background:var(--blue); border:none; border-radius:12px; font-weight:900; color:white;">+ TICKET</button>
+                </div>
+                
+                <label style="margin-top:15px;">⚠️ SÉCURITÉ ALÉA : <span id="alea-val" style="color:var(--orange);">10%</span> <button class="info-btn" onclick="alert('Au début du chantier, garde 10 ou 20%. Quand tu as tous tes tickets, mets 0% (x1.00) pour voir ton bénéfice exact.')">?</button></label>
+                <input type="range" id="alea-range" min="1" max="1.30" step="0.05" value="1.10" oninput="updateAleaText(); calc()" style="width:100%; margin:10px 0;">
+                
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1">
+                        <label>DURÉE (JOURS)</label>
+                        <input type="number" id="jours" placeholder="Nb Jours" oninput="calc()">
+                    </div>
+                    <div style="flex:1">
+                        <label>FRAIS DIVERS (€)</label>
+                        <input type="number" id="divers" placeholder="Carburant..." oninput="calc()">
+                    </div>
+                </div>
+            </div>
+
+            <div id="job-module" class="card"></div>
+
+            <div class="card">
+                <label>✍️ SIGNATURE VALIDATION</label>
+                <canvas id="sig-canvas"></canvas>
+            </div>
+
+            <div class="action-bar">
+                <button class="btn-main" style="background:#2C2C2E; color:white; flex:1;" onclick="exportPDF()">📄 PDF</button>
+                <button class="btn-main" style="flex:2;" onclick="saveAndQuit()">💾 ENREGISTRER</button>
+                <button class="btn-main" style="background:var(--red); flex:0.5;" onclick="deleteCurrent()">🗑️</button>
+            </div>
+        </div>
+
+        <div id="setup-view" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:2000; padding:30px; overflow-y:auto;">
+            <h2 style="color:var(--p);">⚙️ MA CONFIGURATION</h2>
+            
+            <label>MON LOGO</label>
+            <input type="file" id="logoInput" accept="image/*" onchange="uploadLogo()">
+            <center><img id="user-logo-preview" src=""></center>
+
+            <label>ENTREPRISE</label>
+            <input type="text" id="set-company" oninput="saveGlobal()">
+            
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1">
+                    <label>% URSSAF</label>
+                    <input type="number" id="set-urssaf" value="21.2" oninput="saveGlobal()">
+                </div>
+                <div style="flex:1">
+                    <label>TVA ACHAT (%)</label>
+                    <input type="number" id="set-tva-achat" value="20" oninput="saveGlobal()">
+                </div>
+            </div>
+
+            <label>FRAIS FIXES MENSUELS (€)</label>
+            <input type="number" id="set-fixes" value="500" oninput="saveGlobal()">
+            
+            <label>SALAIRE JOUR SOUHAITÉ (€/JOUR)</label>
+            <input type="number" id="set-salaire" value="150" oninput="saveGlobal()">
+
+            <label>JOURS TRAVAILLÉS / MOIS</label>
+            <input type="number" id="set-j-mois" value="20" oninput="saveGlobal()">
+
+            <button class="btn-main" onclick="toggleSetup()" style="margin-top:20px;">SAUVEGARDER & FERMER</button>
+        </div>
+    </div>
+
+    <script>
+        let sig;
+        let deviceID;
+        let currentId = null;
+        let myCatalog = JSON.parse(localStorage.getItem('ms_cat')) || [];
+
+        window.onload = () => {
+            sig = new SignaturePad(document.getElementById('sig-canvas'));
+            if(!localStorage.getItem('ms_id')) localStorage.setItem('ms_id', Math.floor(Math.random()*899)+101);
+            deviceID = localStorage.getItem('ms_id');
+            document.getElementById('id-display').innerText = "ID APPAREIL : " + deviceID;
+            loadGlobal();
+            loadLogo();
+            if(localStorage.getItem('ms_ok') === 'true') run();
+        };
+
+        function unlock() {
+            const k = document.getElementById('keyIn').value;
+            const logic = Math.round((parseInt(deviceID) + 13) * 13.5);
+            if(k == "061266" || k == logic) { localStorage.setItem('ms_ok', 'true'); run(); }
+            else { alert("Clé invalide"); }
+        }
+
+        function run() {
+            document.getElementById('lock-screen').style.display='none';
+            document.getElementById('app').style.display='block';
+            renderFolders();
+            renderCatalog();
+            changeJob('plombier');
+        }
+
+        function changeJob(j) {
+            document.body.className = 'theme-' + j;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + j).classList.add('active');
+            const mod = document.getElementById('job-module');
+            if(j==='plombier') mod.innerHTML = '<label>KILOMÈTRES PRÉVUS</label><input type="number" id="spec" placeholder="0" oninput="calc()">';
+            else if(j==='elec') mod.innerHTML = '<label>PETITE FOURNITURE (€)</label><input type="number" id="spec" placeholder="0" oninput="calc()">';
+            else mod.innerHTML = '<label>SURFACE À PEINDRE (M2)</label><input type="number" id="spec" placeholder="0" oninput="calc()">';
+            calc();
+        }
+
+        function createNewDossier() {
+            currentId = 'd_' + Date.now();
+            document.getElementById('client').value = "";
+            document.getElementById('ttc').value = "";
+            document.getElementById('matos').value = "";
+            document.getElementById('jours').value = "";
+            document.getElementById('divers').value = "";
+            sig.clear();
+            showEdit();
+        }
+
+        function openDossier(id) {
+            currentId = id;
+            const d = JSON.parse(localStorage.getItem(id));
+            document.getElementById('client').value = d.name;
+            document.getElementById('ttc').value = d.ttc;
+            document.getElementById('matos').value = d.matos;
+            document.getElementById('jours').value = d.jours;
+            document.getElementById('divers').value = d.divers;
+            document.getElementById('alea-range').value = d.alea || 1.10;
+            updateAleaText();
+            showEdit();
+            calc();
+        }
+
+        function addTicket() {
+            const val = prompt("Montant du ticket de caisse TTC :");
+            if(val) {
+                const cur = parseFloat(document.getElementById('matos').value) || 0;
+                document.getElementById('matos').value = (cur + parseFloat(val.replace(',','.'))).toFixed(2);
+                calc();
+            }
+        }
+
+        function addToCatalog() {
+            const n = document.getElementById('cat-name').value;
+            const p = document.getElementById('cat-price').value;
+            if(n && p) {
+                myCatalog.push({ n, p: parseFloat(p) });
+                localStorage.setItem('ms_cat', JSON.stringify(myCatalog));
+                renderCatalog();
+                document.getElementById('cat-name').value = ""; document.getElementById('cat-price').value = "";
+            }
+        }
+
+        function renderCatalog() {
+            const list = document.getElementById('catalog-list');
+            list.innerHTML = myCatalog.map((i, idx) => `
+                <div class="cat-item">
+                    <span onclick="applyCat(${i.p})">${i.n} - ${i.p}€</span>
+                    <button onclick="delCat(${idx})" style="color:var(--red); background:none; border:none; font-weight:bold;">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function applyCat(p) {
+            const cur = parseFloat(document.getElementById('matos').value) || 0;
+            document.getElementById('matos').value = (cur + p).toFixed(2);
+            calc();
+        }
+
+        function delCat(i) { myCatalog.splice(i,1); localStorage.setItem('ms_cat', JSON.stringify(myCatalog)); renderCatalog(); }
+
+        function calc() {
+            const ttc = parseFloat(document.getElementById('ttc').value) || 0;
+            const tvaVente = parseFloat(document.getElementById('tva').value);
+            const ht = ttc / tvaVente;
+            
+            const urssafPct = parseFloat(document.getElementById('set-urssaf').value) / 100;
+            const tvaAchat = 1 + (parseFloat(document.getElementById('set-tva-achat').value) / 100);
+            const salJour = parseFloat(document.getElementById('set-salaire').value);
+            const fFixes = parseFloat(document.getElementById('set-fixes').value) / parseFloat(document.getElementById('set-j-mois').value);
+
+            const matosTTC = parseFloat(document.getElementById('matos').value) || 0;
+            const matosHT = matosTTC / tvaAchat;
+            const alea = parseFloat(document.getElementById('alea-range').value);
+            const jr = parseFloat(document.getElementById('jours').value) || 1;
+            const div = parseFloat(document.getElementById('divers').value) || 0;
+            const spec = parseFloat(document.getElementById('spec')?.value) || 0;
+
+            // FORMULE FINALE : CA HT - CHARGES SOC - (MATOS+DIV)*ALEA - (SALAIRE+FIXES)*JOURS
+            const net = ht - (ht * urssafPct) - ((matosHT + div + spec) * alea) - (jr * (salJour + fFixes));
+            
+            const res = document.getElementById('res-net');
+            res.innerText = Math.round(net) + " €";
+            res.style.color = net < 0 ? "var(--red)" : "var(--green)";
+            
+            if(ht > 0) {
+                const pM = (((matosHT+div+spec)*alea)/ht)*100;
+                const pC = (((ht*urssafPct)+(jr*(salJour+fFixes)))/ht)*100;
+                document.getElementById('main-chart').style.background = `conic-gradient(var(--blue) 0% ${pM}%, var(--red) ${pM}% ${pM+pC}%, var(--green) ${pM+pC}% 100%)`;
+            }
+            saveCurrent();
+        }
+
+        function saveCurrent() {
+            if(!currentId) return;
+            const data = {
+                id: currentId,
+                name: document.getElementById('client').value,
+                ttc: document.getElementById('ttc').value,
+                matos: document.getElementById('matos').value,
+                jours: document.getElementById('jours').value,
+                divers: document.getElementById('divers').value,
+                alea: document.getElementById('alea-range').value,
+                lastNet: document.getElementById('res-net').innerText.replace(' €',''),
+                date: new Date().toLocaleDateString()
+            };
+            localStorage.setItem(currentId, JSON.stringify(data));
+            let folders = JSON.parse(localStorage.getItem('ms_folders')) || [];
+            folders = folders.filter(f => f.id !== currentId);
+            folders.unshift(data);
+            localStorage.setItem('ms_folders', JSON.stringify(folders.slice(0, 10)));
+        }
+
+        function renderFolders() {
+            const list = document.getElementById('folder-list');
+            const f = JSON.parse(localStorage.getItem('ms_folders')) || [];
+            list.innerHTML = f.map(i => `
+                <div class="folder-item" onclick="openDossier('${i.id}')">
+                    <div><b>${i.name || 'Nouveau Chantier'}</b><br><small>${i.date}</small></div>
+                    <div style="font-weight:900; color:${i.lastNet<0?'var(--red)':'var(--green)'}">${i.lastNet} €</div>
+                </div>
+            `).join('');
+        }
+
+        function uploadLogo() {
+            const file = document.getElementById('logoInput').files[0];
+            const reader = new FileReader();
+            reader.onloadend = () => { 
+                const base64 = reader.result;
+                localStorage.setItem('ms_logo', base64);
+                document.getElementById('user-logo-preview').src = base64;
+                document.getElementById('user-logo-preview').style.display = 'block';
+                document.getElementById('pdf-logo-view').src = base64;
+                document.getElementById('pdf-logo-view').style.display = 'block';
+            }
+            if(file) reader.readAsDataURL(file);
+        }
+
+        function loadLogo() {
+            const l = localStorage.getItem('ms_logo');
+            if(l) {
+                document.getElementById('user-logo-preview').src = l;
+                document.getElementById('user-logo-preview').style.display = 'block';
+                document.getElementById('pdf-logo-view').src = l;
+                document.getElementById('pdf-logo-view').style.display = 'block';
+            }
+        }
+
+        function updateAleaText() { document.getElementById('alea-val').innerText = Math.round((document.getElementById('alea-range').value - 1) * 100) + "%"; }
+        function toggleSetup() { const s = document.getElementById('setup-view'); s.style.display = s.style.display==='none'?'block':'none'; }
+        function showEdit() { document.getElementById('view-folders').style.display='none'; document.getElementById('view-edit').style.display='block'; }
+        function saveAndQuit() { saveCurrent(); document.getElementById('view-folders').style.display='block'; document.getElementById('view-edit').style.display='none'; renderFolders(); }
+        function deleteCurrent() { if(confirm("Supprimer ce dossier définitivement ?")) { localStorage.removeItem(currentId); let folders = JSON.parse(localStorage.getItem('ms_folders')).filter(f=>f.id!==currentId); localStorage.setItem('ms_folders', JSON.stringify(folders)); saveAndQuit(); } }
+        
+        function saveGlobal() {
+            const g = { 
+                c: document.getElementById('set-company').value, 
+                u: document.getElementById('set-urssaf').value, 
+                t: document.getElementById('set-tva-achat').value, 
+                s: document.getElementById('set-salaire').value, 
+                f: document.getElementById('set-fixes').value, 
+                j: document.getElementById('set-j-mois').value 
+            };
+            localStorage.setItem('ms_global', JSON.stringify(g));
+            if(currentId) calc();
+        }
+
+        function loadGlobal() {
+            const g = JSON.parse(localStorage.getItem('ms_global'));
+            if(g) { 
+                document.getElementById('set-company').value=g.c; 
+                document.getElementById('set-urssaf').value=g.u; 
+                document.getElementById('set-tva-achat').value=g.t || 20; 
+                document.getElementById('set-salaire').value=g.s; 
+                document.getElementById('set-fixes').value=g.f; 
+                document.getElementById('set-j-mois').value=g.j; 
+            }
+        }
+
+        function exportPDF() {
+            const name = document.getElementById('client').value || 'Chantier';
+            const element = document.getElementById('view-edit');
+            html2pdf().from(element).set({ margin: 10, filename: name + '_Bilan.pdf', image: { type: 'jpeg', quality: 0.98 } }).save();
+        }
+
+        function requestKey() { window.open(`https://wa.me/33786954881?text=Bonjour, ID Appareil ${deviceID}. Je souhaite activer ma licence Marge-Sûre.`); }
+    </script>
+</body>
+</html>
